@@ -1,14 +1,21 @@
 import requests as r
 import telegram
-import json
 import time
 import shelve
+import os
 
 from bs4 import BeautifulSoup as bs
+from configparser import ConfigParser
 
-check_site = "https://www.ansperformance.com/products/rave?variant=28223563464809"
+config_dir = os.path.normpath(os.getenv("CONFIG_PATH", f"{os.getcwd()}/config"))
+config = ConfigParser()
+config_file = os.path.normpath(f"{config_dir}/config.ini")
+if os.path.isfile(config_file):
+    config.read(config_file)
 
-state = shelve.open("./stockstatus.json")
+check_site = os.getenv("CHECK_URL", config.get("app", "url"))
+
+state = shelve.open(os.path.normpath(f"{config_dir}/stockstatus.json"))
 
 
 def check_retailer(site):
@@ -21,23 +28,18 @@ def check_retailer(site):
 
 
 def notify_ending(message):
-    with open('./docs/keys.json', 'r') as keys_file:
-        k = json.load(keys_file)
-        token = k['telegram_token']
-        chat_id = k['telegram_chat_id']
-    bot = telegram.Bot(token=token)
-    bot.sendMessage(chat_id=chat_id, text=message)
+    bot = telegram.Bot(token=os.getenv("TELEGRAM_TOKEN", config.get("telegram", "tokenid")))
+    bot.sendMessage(chat_id=os.getenv("TELEGRAM_CHATID", config.get("telegram", "chatid")), text=message)
 
-
-state['in_stock'] = False
 
 while True:
     if "in_stock" not in state.keys():
         state['in_stock'] = False
     if check_retailer(check_site) is None and not state['in_stock']:
-        notify_ending(f"In Stock {check_site}")
+        message = os.getenv("NOTIFY_MESSAGE", config.get("app", "message"))
+        notify_ending(f"{message}\n{check_site}")
         state['in_stock'] = True
     else:
         state['in_stock'] = False
     state.sync()
-    time.sleep(300)
+    time.sleep(int(os.getenv("REFRESH_SEC", config.get("app", "refresh"))))
