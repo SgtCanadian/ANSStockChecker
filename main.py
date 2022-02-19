@@ -12,6 +12,9 @@ config = ConfigParser()
 config_file = os.path.normpath(f"{config_dir}/config.ini")
 if os.path.isfile(config_file):
     config.read(config_file)
+else:
+    config.add_section("app")
+    config.add_section("telegram")
 
 check_site = os.getenv("CHECK_URL", config.get("app", "url"))
 
