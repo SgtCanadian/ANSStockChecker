@@ -14,7 +14,12 @@ if os.path.isfile(config_file):
     config.read(config_file)
 else:
     config.add_section("app")
+    config.set("app", "url", "")
+    config.set("app", "refresh", "")
+    config.set("app", "message", "")
     config.add_section("telegram")
+    config.set("telegram", "chatid", "")
+    config.set("telegram", "tokenid", "")
 
 check_site = os.getenv("CHECK_URL", config.get("app", "url"))
 
